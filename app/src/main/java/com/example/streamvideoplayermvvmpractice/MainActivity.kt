@@ -19,6 +19,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +30,12 @@ import coil.compose.AsyncImage
 import com.example.streamvideoplayermvvmpractice.data.VideoData
 import com.example.streamvideoplayermvvmpractice.data.mainvideoList
 import com.example.streamvideoplayermvvmpractice.ui.theme.StreamVideoPlayerMVVMpracticeTheme
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.streamvideoplayermvvmpractice.viewModel.VideoPlayerViewModel
 
 
 class MainActivity : ComponentActivity() {
@@ -47,7 +56,26 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun StreamingVideoPlayer(){
+
+    var isPlaying by remember{
+        mutableStateOf(false)
+    }
+    var videoItemIndex by remember{
+        mutableIntStateOf(0)
+    }
+    val viewModel: VideoPlayerViewModel = viewModel()
+    viewModel.videoList = mainvideoList
+    val context = LocalContext.current
+
     Column{
+
+        StreamerPlayer(
+            viewModel = viewModel,
+            isPlaying = isPlaying,
+            onPlayerClosed ={isVideoPlaying ->
+                isPlaying = isVideoPlaying
+            })
+
         LazyColumn(
             Modifier.padding(10.dp),
             content = {
@@ -55,6 +83,9 @@ fun StreamingVideoPlayer(){
                     Row(
                         Modifier.fillMaxWidth()
                             .clickable{
+                                if (videoItemIndex != index) isPlaying = false
+                                viewModel.index = index
+                                videoItemIndex = viewModel.index
 
                             },
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -78,6 +109,14 @@ fun StreamingVideoPlayer(){
                 }
             }
         )
+        LaunchedEffect(key1 = videoItemIndex) {
+            isPlaying = true
+            viewModel.apply {
+                releasePlayer()
+                initializePlayer(context)
+                playVideo()
+            }
+        }
 
     }
 }
